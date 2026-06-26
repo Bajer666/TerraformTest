@@ -63,10 +63,10 @@ jobs:
       - name: Decide randomly whether to continue
         run: |
           Write-Host "Middle Stage: all Stage 1 jobs succeeded, entering middle stage..."
-          $rand = Get-Random -Minimum 0 -Maximum 2  # 0 or 1
+          $rand = Get-Random -Minimum 0 -Maximum 5  # 0 or 1
           Write-Host "Middle Stage: random value is $rand (0 = fail, 1 = success)."
 
-          if ($rand -eq 1) {
+          if ($rand -ne 1) {
             Write-Host "Middle Stage: SUCCESS, pipeline will continue to final stage." -ForegroundColor Green
           }
           else {
