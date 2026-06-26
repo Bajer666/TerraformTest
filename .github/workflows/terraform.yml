@@ -1,4 +1,4 @@
-name: 'Terraform (test print)'
+name: 'Terraform (multi-stage demo)'
 
 on:
   push:
@@ -9,22 +9,83 @@ permissions:
   contents: read
 
 jobs:
-  terraform:
-    name: 'Terraform test job'
-    runs-on: ubuntu-latest
-    environment: production
+  # --- Stage 1: three parallel jobs ---
 
+  stage1_job1:
+    name: 'Stage 1 - Job 1'
+    runs-on: ubuntu-latest
     defaults:
       run:
         shell: pwsh
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Print and wait with PowerShell
+      - name: Stage 1 - Job 1 work
         run: |
-          Write-Host "Hello from GitHub Actions using PowerShell!"
-          Write-Host "Sleeping for 10 seconds..."
-          Start-Sleep -Seconds 10
-          Write-Host "Done sleeping." -f green
+          Write-Host "Stage 1 - Job 1: starting..."
+          Start-Sleep -Seconds 2
+          Write-Host "Stage 1 - Job 1: finished successfully." -ForegroundColor Green
+
+  stage1_job2:
+    name: 'Stage 1 - Job 2'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Stage 1 - Job 2 work
+        run: |
+          Write-Host "Stage 1 - Job 2: starting..."
+          Start-Sleep -Seconds 2
+          Write-Host "Stage 1 - Job 2: finished successfully." -ForegroundColor Green
+
+  stage1_job3:
+    name: 'Stage 1 - Job 3'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Stage 1 - Job 3 work
+        run: |
+          Write-Host "Stage 1 - Job 3: starting..."
+          Start-Sleep -Seconds 2
+          Write-Host "Stage 1 - Job 3: finished successfully." -ForegroundColor Green
+
+  # --- Shared middle stage: runs only if all three Stage 1 jobs succeeded ---
+
+  middle_stage:
+    name: 'Middle Stage (50% chance)'
+    runs-on: ubuntu-latest
+    needs: [stage1_job1, stage1_job2, stage1_job3]   # wait for all 3
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Decide randomly whether to continue
+        run: |
+          Write-Host "Middle Stage: all Stage 1 jobs succeeded, entering middle stage..."
+          $rand = Get-Random -Minimum 0 -Maximum 2  # 0 or 1
+          Write-Host "Middle Stage: random value is $rand (0 = fail, 1 = success)."
+
+          if ($rand -eq 1) {
+            Write-Host "Middle Stage: SUCCESS, pipeline will continue to final stage." -ForegroundColor Green
+          }
+          else {
+            Write-Host "Middle Stage: FAILURE, pipeline will stop here." -ForegroundColor Red
+            exit 1  # make this job fail so the final stage does not run
+          }
+
+  # --- Final stage: runs only if middle_stage succeeded ---
+
+  final_stage:
+    name: 'Final Stage'
+    runs-on: ubuntu-latest
+    needs: [middle_stage]
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Final stage work
+        run: |
+          Write-Host "Final Stage: middle stage succeeded, reaching the final point!" -ForegroundColor Green
+          Start-Sleep -Seconds 2
+          Write-Host "Final Stage: pipeline finished." -ForegroundColor Green
