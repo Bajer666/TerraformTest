@@ -53,25 +53,30 @@ jobs:
   # --- Shared middle stage: runs only if all three Stage 1 jobs succeeded ---
 
   middle_stage:
-    name: 'Middle Stage (50% chance)'
+    name: 'Middle Stage (10% chance of failure)'
     runs-on: ubuntu-latest
     needs: [stage1_job1, stage1_job2, stage1_job3]   # wait for all 3
     defaults:
       run:
         shell: pwsh
     steps:
-      - name: Decide randomly whether to continue
+      - name: Decide randomly whether to continue (10% fail)
         run: |
           Write-Host "Middle Stage: all Stage 1 jobs succeeded, entering middle stage..."
-          $rand = Get-Random -Minimum 0 -Maximum 5  # 0 or 1
-          Write-Host "Middle Stage: random value is $rand (0 = fail, 1 = success)."
+          Write-Host "Middle Stage: generating random number in range 0–9..."
+          
+          # Get a random integer from 0 to 9 (inclusive)
+          $rand = Get-Random -Minimum 0 -Maximum 10
+          
+          Write-Host "Middle Stage: RANDOM RESULT = $rand" -ForegroundColor Yellow
+          Write-Host "Middle Stage: Rule => 0–8 = SUCCESS (90%), 9 = FAILURE (10%)"
 
-          if ($rand -ne 1) {
-            Write-Host "Middle Stage: SUCCESS, pipeline will continue to final stage." -ForegroundColor Green
+          if ($rand -eq 9) {
+            Write-Host "Middle Stage: RESULT = FAILURE (random value was 9). Pipeline will stop here." -ForegroundColor Red
+            exit 1  # make this job fail so the final stage does not run
           }
           else {
-            Write-Host "Middle Stage: FAILURE, pipeline will stop here." -ForegroundColor Red
-            exit 1  # make this job fail so the final stage does not run
+            Write-Host "Middle Stage: RESULT = SUCCESS (random value was $rand). Pipeline will continue to final stage." -ForegroundColor Green
           }
 
   # --- Final stage: runs only if middle_stage succeeded ---
